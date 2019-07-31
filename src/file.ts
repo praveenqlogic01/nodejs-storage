@@ -315,6 +315,7 @@ export type DownloadCallback = (
 
 export interface DownloadOptions extends CreateReadStreamOptions {
   destination?: string;
+  forever?: boolean;
 }
 
 interface CopyQuery {
@@ -1246,8 +1247,13 @@ class File extends ServiceObject<File> {
         headers.Range = `bytes=${tailRequest ? end : `${start}-${end}`}`;
       }
 
+      let forever = true;
+      if (options.hasOwnProperty('forever')) {
+        // tslint:disable-next-line: no-any
+        forever = (options as any).forever;
+      }
       const reqOpts = {
-        forever: false,
+        forever,
         uri: '',
         headers,
         qs: query,
@@ -1912,6 +1918,9 @@ class File extends ServiceObject<File> {
       options = {};
     } else {
       options = optionsOrCallback as DownloadOptions;
+    }
+    if (!options.forever) {
+      options = Object.assign({}, options, {forever: false});
     }
 
     callback = once(callback as DownloadCallback);
