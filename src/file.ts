@@ -58,6 +58,17 @@ import {
 const duplexify: DuplexifyConstructor = require('duplexify');
 import {normalize, objectEntries} from './util';
 import {GaxiosError, Headers, request as gaxiosRequest} from 'gaxios';
+import {
+  SetMetadataOptions,
+  MetadataCallback,
+  SetMetadataResponse,
+} from '@google-cloud/common/build/src/service-object';
+
+export interface FileMetadata {
+  // tslint:disable-next-line: no-any
+  [key: string]: any;
+  customMetadata?: Metadata;
+}
 
 export type GetExpirationDateResponse = [Date];
 export interface GetExpirationDateCallback {
@@ -179,7 +190,7 @@ export type PredefinedAcl =
   | 'publicRead';
 
 export interface CreateResumableUploadOptions {
-  metadata?: Metadata;
+  metadata?: FileMetadata;
   origin?: string;
   offset?: number;
   predefinedAcl?: PredefinedAcl;
@@ -1513,7 +1524,7 @@ class File extends ServiceObject<File> {
         generation: this.generation,
         key: this.encryptionKey,
         kmsKeyName: this.kmsKeyName,
-        metadata: options.metadata,
+        metadata: options.metadata as resumableUpload.ConfigMetadata,
         offset: options.offset,
         origin: options.origin,
         predefinedAcl: options.predefinedAcl,
@@ -1680,21 +1691,21 @@ class File extends ServiceObject<File> {
     options = Object.assign({metadata: {}}, options);
 
     if (options.contentType) {
-      options.metadata.contentType = options.contentType;
+      options.metadata!.contentType = options.contentType;
 
-      if (options.metadata.contentType === 'auto') {
-        options.metadata.contentType = mime.getType(this.name);
+      if (options.metadata!.contentType === 'auto') {
+        options.metadata!.contentType = mime.getType(this.name);
       }
     }
 
     let gzip = options.gzip;
 
     if (gzip === 'auto') {
-      gzip = compressible(options.metadata.contentType);
+      gzip = compressible(options.metadata!.contentType);
     }
 
     if (gzip) {
-      options.metadata.contentEncoding = 'gzip';
+      options.metadata!.contentEncoding = 'gzip';
     }
 
     let crc32c = true;
@@ -3120,11 +3131,50 @@ class File extends ServiceObject<File> {
     const options =
       typeof optionsOrCallback === 'object' ? optionsOrCallback : {};
 
+    if (options.metadata && options.metadata.customMetadata) {
+      options.metadata.metadata = options.metadata.customMetadata;
+      delete options.metadata.customMetadata;
+    }
+
     this.createWriteStream(options)
       .on('error', callback!)
       .on('finish', callback!)
       .end(data);
   }
+  setMetadata(
+    metadata: FileMetadata,
+    options?: SetMetadataOptions
+  ): Promise<SetMetadataResponse>;
+  setMetadata(metadata: FileMetadata, callback: MetadataCallback): void;
+  setMetadata(
+    metadata: FileMetadata,
+    options: SetMetadataOptions,
+    callback: MetadataCallback
+  ): void;
+  /**
+   * Set the metadata for this object.
+   *
+   * @param {FileMetadata} metadata - The metadata to set on this object.
+   * @param {object=} options - Configuration options.
+   * @param {function=} callback - The callback function.
+   * @param {?error} callback.err - An error returned while making this request.
+   * @param {object} callback.apiResponse - The full API response.
+   */
+
+  setMetadata(
+    metadata: FileMetadata,
+    options?: SetMetadataOptions | MetadataCallback,
+    callback?: MetadataCallback
+  ): void | Promise<SetMetadataResponse> {
+    const customMetadata: Metadata =
+      metadata.customMetadata || metadata.metadata;
+    delete metadata.customMetadata;
+    if (customMetadata) {
+      metadata = Object.assign({}, {metadata: customMetadata}, metadata);
+    }
+    return super.setMetadata(metadata, options!, callback!);
+  }
+
   setStorageClass(
     storageClass: string,
     options?: SetStorageClassOptions
@@ -3261,7 +3311,7 @@ class File extends ServiceObject<File> {
       generation: this.generation,
       key: this.encryptionKey,
       kmsKeyName: this.kmsKeyName,
-      metadata: options.metadata,
+      metadata: options.metadata as resumableUpload.ConfigMetadata,
       offset: options.offset,
       predefinedAcl: options.predefinedAcl,
       private: options.private,
@@ -3345,7 +3395,7 @@ class File extends ServiceObject<File> {
           dup.emit('complete');
         });
       },
-      metadata: options.metadata,
+      metadata: options.metadata as resumableUpload.ConfigMetadata,
       request: reqOpts,
     });
   }

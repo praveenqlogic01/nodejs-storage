@@ -52,7 +52,7 @@ class FakeFile {
   bucket: Bucket;
   name: string;
   options: FileOptions;
-  metadata: {};
+  metadata: Metadata;
   createWriteStream: Function;
   isSameFile = () => false;
   constructor(bucket: Bucket, name: string, options?: FileOptions) {
@@ -2092,7 +2092,10 @@ describe('Bucket', () => {
         ws.write = () => true;
         setImmediate(() => {
           const expectedContentType = 'application/json; charset=utf-8';
-          assert.strictEqual(options.metadata.contentType, expectedContentType);
+          assert.strictEqual(
+            options.metadata!.contentType,
+            expectedContentType
+          );
           done();
         });
         return ws;
@@ -2108,7 +2111,10 @@ describe('Bucket', () => {
         ws.write = () => true;
         setImmediate(() => {
           const expectedContentType = 'text/plain; charset=utf-8';
-          assert.strictEqual(options.metadata.contentType, expectedContentType);
+          assert.strictEqual(
+            options.metadata!.contentType,
+            expectedContentType
+          );
           done();
         });
         return ws;
@@ -2140,7 +2146,7 @@ describe('Bucket', () => {
         ws.write = () => true;
         setImmediate(() => {
           assert.strictEqual(
-            options.metadata.contentType,
+            options.metadata!.contentType,
             metadata.contentType
           );
           done();
