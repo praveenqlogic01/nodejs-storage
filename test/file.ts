@@ -20,6 +20,7 @@ import {
   ServiceObject,
   ServiceObjectConfig,
   util,
+  Metadata,
 } from '@google-cloud/common';
 import {PromisifyAllOptions} from '@google-cloud/promisify';
 import * as assert from 'assert';
@@ -47,6 +48,8 @@ import {
   PolicyDocument,
   SetFileMetadataOptions,
 } from '../src';
+import {SetMetadataOptions} from '@google-cloud/common/build/src/service-object';
+import {FileMetadata, CreateWriteStreamOptions} from '../src/file';
 
 let promisified = false;
 let makeWritableStreamOverride: Function | null;
@@ -3447,7 +3450,6 @@ describe('File', () => {
 
   describe('save', () => {
     const DATA = 'Data!';
-
     it('should accept an options object', done => {
       const options = {};
 
@@ -3504,6 +3506,23 @@ describe('File', () => {
       };
 
       file.save(DATA, assert.ifError);
+    });
+
+    it('should create metadata object for save', done => {
+      const metadata: FileMetadata = {
+        customMetadata: {
+          'custom-key': 'custom-value',
+        },
+      };
+      file.createWriteStream = (options: CreateWriteStreamOptions) => {
+        assert.deepStrictEqual(options.metadata, {
+          metadata: {
+            'custom-key': 'custom-value',
+          },
+        });
+        done();
+      };
+      file.save(DATA, {metadata}, assert.ifError);
     });
   });
 
@@ -3789,6 +3808,29 @@ describe('File', () => {
 
         file.startResumableUpload_(dup);
       });
+    });
+  });
+
+  describe('metadata', () => {
+    it('should create metadata object for service object', done => {
+      const metadata: FileMetadata = {
+        customMetadata: {
+          'custom-key': 'custom-value',
+        },
+      };
+
+      sinon
+        .stub(FakeServiceObject.prototype, 'setMetadata')
+        .callsFake((metadata: Metadata) => {
+          assert.deepStrictEqual(metadata, {
+            metadata: {
+              'custom-key': 'custom-value',
+            },
+          });
+          done();
+        });
+
+      file.setMetadata(metadata, assert.ifError);
     });
   });
 
