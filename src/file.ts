@@ -1,5 +1,5 @@
-/*!
- * Copyright 2014 Google Inc. All Rights Reserved.
+/**
+ * Copyright 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,6 +179,7 @@ export type PredefinedAcl =
   | 'publicRead';
 
 export interface CreateResumableUploadOptions {
+  configPath?: string;
   metadata?: Metadata;
   origin?: string;
   offset?: number;
@@ -277,7 +278,7 @@ const STORAGE_DOWNLOAD_BASE_URL = 'https://storage.googleapis.com';
  * @private
  */
 const STORAGE_UPLOAD_BASE_URL =
-  'https://www.googleapis.com/upload/storage/v1/b';
+  'https://storage.googleapis.com/upload/storage/v1/b';
 
 /**
  * @const {RegExp}
@@ -858,7 +859,8 @@ class File extends ServiceObject<File> {
    *     `projects/my-project/locations/location/keyRings/my-kr/cryptoKeys/my-key`,
    *     that will be used to encrypt the object. Overwrites the object
    * metadata's `kms_key_name` value, if any.
-   * @property {string} [keepAcl] Retain the ACL for the new file.
+   * @property {string} [keepAcl] This parameter is not supported and will be
+   *     removed in the next major.
    * @property {string} [predefinedAcl] Set the ACL for the new file.
    * @property {string} [token] A previously-returned `rewriteToken` from an
    *     unfinished rewrite request.
@@ -983,6 +985,11 @@ class File extends ServiceObject<File> {
       callback = optionsOrCallback;
     } else if (optionsOrCallback) {
       options = optionsOrCallback;
+    }
+
+    if (options.hasOwnProperty('keepAcl')) {
+      // TODO: remove keepAcl from interface in next major.
+      emitWarning();
     }
 
     options = extend(true, {}, options);
@@ -1191,6 +1198,9 @@ class File extends ServiceObject<File> {
 
     // tslint:disable-next-line:no-any
     let validateStream: any; // Created later, if necessary.
+
+    // TODO: remove `through2` dependency in favor of native PassThrough
+    // once Node 8 support is discontinued
     const throughStream = streamEvents(through()) as Duplex;
 
     let crc32c = true;
@@ -1426,6 +1436,10 @@ class File extends ServiceObject<File> {
    */
   /**
    * @typedef {object} CreateResumableUploadOptions
+   * @property {string} [configPath] Where the `gcs-resumable-upload`
+   *     configuration file should be stored on your system. This maps to the
+   *     [configstore option by the same
+   * name](https://github.com/yeoman/configstore/tree/0df1ec950d952b1f0dfb39ce22af8e505dffc71a#configpath).
    * @property {object} [metadata] Metadata to set on the file.
    * @property {string} [origin] Origin header to set for the upload.
    * @property {string} [predefinedAcl] Apply a predefined set of access
@@ -1509,6 +1523,7 @@ class File extends ServiceObject<File> {
       {
         authClient: this.storage.authClient,
         bucket: this.bucket.name,
+        configPath: options.configPath,
         file: this.name,
         generation: this.generation,
         key: this.encryptionKey,
@@ -1527,6 +1542,10 @@ class File extends ServiceObject<File> {
 
   /**
    * @typedef {object} CreateWriteStreamOptions Configuration options for File#createWriteStream().
+   * @property {string} [configPath] **This only applies to resumable
+   *     uploads.** Where the `gcs-resumable-upload` configuration file should
+   * be stored on your system. This maps to the [configstore option by the same
+   * name](https://github.com/yeoman/configstore/tree/0df1ec950d952b1f0dfb39ce22af8e505dffc71a#configpath).
    * @property {string} [contentType] Alias for
    *     `options.metadata.contentType`. If set to `auto`, the file name is used
    *     to determine the contentType.
@@ -1835,6 +1854,47 @@ class File extends ServiceObject<File> {
     });
 
     return stream as Writable;
+  }
+
+  /**
+   * Delete failed resumable upload file cache.
+   *
+   * Resumable file upload cache the config file to restart upload in case of
+   * failure. In certain scenarios, the resumable upload will not works and
+   * upload file cache needs to be deleted to upload the same file.
+   *
+   * Following are some of the scenarios.
+   *
+   * Resumable file upload failed even though the file is successfully saved
+   * on the google storage and need to clean up a resumable file cache to
+   * update the same file.
+   *
+   * Resumable file upload failed due to pre-condition
+   * (i.e generation number is not matched) and want to upload a same
+   * file with the new generation number.
+   *
+   * @example
+   * const {Storage} = require('@google-cloud/storage');
+   * const storage = new Storage();
+   * const myBucket = storage.bucket('my-bucket');
+   *
+   * const file = myBucket.file('my-file', { generation: 0 });
+   * const contents = 'This is the contents of the file.';
+   *
+   * file.save(contents, function(err) {
+   *   if (err) {
+   *     file.deleteResumableCache();
+   *   }
+   * });
+   *
+   */
+  deleteResumableCache() {
+    const uploadStream = resumableUpload.upload({
+      bucket: this.bucket.name,
+      file: this.name,
+      generation: this.generation,
+    });
+    uploadStream.deleteConfig();
   }
 
   download(options?: DownloadOptions): Promise<DownloadResponse>;
@@ -3257,6 +3317,7 @@ class File extends ServiceObject<File> {
     const uploadStream = resumableUpload.upload({
       authClient: this.storage.authClient,
       bucket: this.bucket.name,
+      configPath: options.configPath,
       file: this.name,
       generation: this.generation,
       key: this.encryptionKey,
@@ -3403,6 +3464,17 @@ promisifyAll(File, {
     'getDate',
   ],
 });
+
+let warned = false;
+export function emitWarning() {
+  if (!warned) {
+    warned = true;
+    process.emitWarning(
+      'keepAcl parameter is not supported and will be removed in the next major',
+      'DeprecationWarning'
+    );
+  }
+}
 
 /**
  * Reference to the {@link File} class.

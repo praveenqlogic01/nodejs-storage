@@ -4,6 +4,46 @@
 
 [1]: https://www.npmjs.com/package/nodejs-storage?activeTab=versions
 
+### [3.2.1](https://www.github.com/googleapis/nodejs-storage/compare/v3.2.0...v3.2.1) (2019-08-28)
+
+
+### Bug Fixes
+
+* **docs:** stop redirecting reference docs to anchor, add new sample to README ([bbb5537](https://www.github.com/googleapis/nodejs-storage/commit/bbb5537))
+* **samples:** fix failing sample view IAM member-role groups ([1c4f21f](https://www.github.com/googleapis/nodejs-storage/commit/1c4f21f))
+
+## [3.2.0](https://www.github.com/googleapis/nodejs-storage/compare/v3.1.0...v3.2.0) (2019-08-22)
+
+
+### Bug Fixes
+
+* **deps:** update @google-cloud/common with fixes for http ([#809](https://www.github.com/googleapis/nodejs-storage/issues/809)) ([8598631](https://www.github.com/googleapis/nodejs-storage/commit/8598631))
+* **deps:** update dependency @google-cloud/pubsub to ^0.31.0 ([#814](https://www.github.com/googleapis/nodejs-storage/issues/814)) ([604e564](https://www.github.com/googleapis/nodejs-storage/commit/604e564))
+* **deps:** update dependency date-and-time to ^0.9.0 ([#805](https://www.github.com/googleapis/nodejs-storage/issues/805)) ([8739a7d](https://www.github.com/googleapis/nodejs-storage/commit/8739a7d))
+* **ts:** fix nock @~11.0.0 ([#819](https://www.github.com/googleapis/nodejs-storage/issues/819)) ([48f9b44](https://www.github.com/googleapis/nodejs-storage/commit/48f9b44))
+
+
+### Features
+
+* hmac service account ([#751](https://www.github.com/googleapis/nodejs-storage/issues/751)) ([ed1ec7b](https://www.github.com/googleapis/nodejs-storage/commit/ed1ec7b))
+
+## [3.1.0](https://www.github.com/googleapis/nodejs-storage/compare/v3.0.4...v3.1.0) (2019-08-09)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @google-cloud/paginator to v2 ([#781](https://www.github.com/googleapis/nodejs-storage/issues/781)) ([23244e9](https://www.github.com/googleapis/nodejs-storage/commit/23244e9))
+* **deps:** update dependency @google-cloud/pubsub to ^0.30.0 ([#778](https://www.github.com/googleapis/nodejs-storage/issues/778)) ([7256650](https://www.github.com/googleapis/nodejs-storage/commit/7256650))
+* allow calls with no request, add JSON proto ([30fff15](https://www.github.com/googleapis/nodejs-storage/commit/30fff15))
+* **deps:** update dependency date-and-time to ^0.8.0 ([#779](https://www.github.com/googleapis/nodejs-storage/issues/779)) ([ab2734d](https://www.github.com/googleapis/nodejs-storage/commit/ab2734d))
+* **deps:** upgrade @google-cloud/common version to show original… ([#795](https://www.github.com/googleapis/nodejs-storage/issues/795)) ([ea63cbe](https://www.github.com/googleapis/nodejs-storage/commit/ea63cbe))
+* **deps:** use the latest extend ([#800](https://www.github.com/googleapis/nodejs-storage/issues/800)) ([a7f0172](https://www.github.com/googleapis/nodejs-storage/commit/a7f0172))
+
+
+### Features
+
+* **file:** allow setting configPath of resumable upload ([#642](https://www.github.com/googleapis/nodejs-storage/issues/642)) ([a8ceb78](https://www.github.com/googleapis/nodejs-storage/commit/a8ceb78))
+
 ### [3.0.4](https://www.github.com/googleapis/nodejs-storage/compare/v3.0.3...v3.0.4) (2019-07-25)
 
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -345,6 +345,65 @@ describe('File', () => {
   });
 
   describe('copy', () => {
+    describe('depricate `keepAcl`', () => {
+      // tslint:disable-next-line: no-any
+      let STORAGE2: any;
+      // tslint:disable-next-line: no-any
+      let BUCKET2: any;
+      // tslint:disable-next-line: no-any
+      let file2: any;
+      beforeEach(() => {
+        STORAGE2 = {
+          createBucket: util.noop,
+          request: util.noop,
+          // tslint:disable-next-line: no-any
+          makeAuthenticatedRequest(req: {}, callback: any) {
+            if (callback) {
+              (callback.onAuthenticated || callback)(null, req);
+            }
+          },
+          bucket(name: string) {
+            return new Bucket(this, name);
+          },
+        };
+        BUCKET2 = new Bucket(STORAGE, 'bucket-name');
+        file2 = new File(BUCKET, FILE_NAME);
+      });
+
+      it('should warn if `keepAcl` parameter is passed', done => {
+        file.request = util.noop;
+
+        // since --throw-deprication is enabled using try=>catch block
+        try {
+          file.copy('newFile', {keepAcl: 'private'}, assert.ifError);
+        } catch (err) {
+          assert.strictEqual(
+            err.message,
+            'keepAcl parameter is not supported and will be removed in the next major'
+          );
+          assert.strictEqual(err.name, 'DeprecationWarning');
+          done();
+        }
+      });
+
+      it('should warn only once `keepAcl` parameter is passed', done => {
+        file.request = util.noop;
+
+        // since --throw-deprication is enabled using try=>catch block
+        try {
+          file.copy('newFile', {keepAcl: 'private'}, assert.ifError);
+        } catch (err) {
+          assert.strictEqual(
+            err.message,
+            'keepAcl parameter is not supported and will be removed in the next major'
+          );
+          assert.strictEqual(err.name, 'DeprecationWarning');
+        }
+        file2.copy('newFile2', {keepAcl: 'private'}, assert.ifError);
+        done();
+      });
+    });
+
     it('should throw if no destination is provided', () => {
       assert.throws(() => {
         file.copy();
@@ -1511,6 +1570,7 @@ describe('File', () => {
 
     it('should create a resumable upload URI', done => {
       const options = {
+        configPath: '/Users/user/.config/here',
         metadata: {
           contentType: 'application/json',
         },
@@ -1533,6 +1593,7 @@ describe('File', () => {
 
           assert.strictEqual(opts.authClient, storage.authClient);
           assert.strictEqual(opts.bucket, bucket.name);
+          assert.strictEqual(opts.configPath, options.configPath);
           assert.strictEqual(opts.file, file.name);
           assert.strictEqual(opts.generation, file.generation);
           assert.strictEqual(opts.key, file.encryptionKey);
@@ -2019,6 +2080,28 @@ describe('File', () => {
           done();
         });
       });
+    });
+  });
+
+  describe('deleteResumableCache', () => {
+    it('should delete resumable file upload cache', done => {
+      file.generation = 123;
+
+      resumableUploadOverride = {
+        // tslint:disable-next-line no-any
+        upload(opts: any) {
+          assert.strictEqual(opts.bucket, file.bucket.name);
+          assert.strictEqual(opts.file, file.name);
+          assert.strictEqual(opts.generation, file.generation);
+
+          return {
+            deleteConfig: () => {
+              done();
+            },
+          };
+        },
+      };
+      file.deleteResumableCache();
     });
   });
 
@@ -3671,6 +3754,7 @@ describe('File', () => {
     describe('starting', () => {
       it('should start a resumable upload', done => {
         const options = {
+          configPath: '/Users/user/.config/here',
           metadata: {},
           offset: 1234,
           public: true,
@@ -3693,6 +3777,7 @@ describe('File', () => {
 
             assert.strictEqual(opts.authClient, authClient);
             assert.strictEqual(opts.bucket, bucket.name);
+            assert.strictEqual(opts.configPath, options.configPath);
             assert.strictEqual(opts.file, file.name);
             assert.strictEqual(opts.generation, file.generation);
             assert.strictEqual(opts.key, file.encryptionKey);
@@ -3818,7 +3903,7 @@ describe('File', () => {
             predefinedAcl: options.predefinedAcl,
           },
           uri:
-            'https://www.googleapis.com/upload/storage/v1/b/' +
+            'https://storage.googleapis.com/upload/storage/v1/b/' +
             file.bucket.name +
             '/o',
         });
